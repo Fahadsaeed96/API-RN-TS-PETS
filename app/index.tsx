@@ -8,13 +8,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getPets } from "../API/Pets";
 import { AddPetModal } from "../components/AddPetModal";
 import { PetCard } from "../components/PetCard";
-import { pets as initialPets, Pet } from "../data/pets";
+import { Pet } from "../data/pets";
 
 export default function Index() {
   const router = useRouter();
-  const [pets, setPets] = useState<Pet[]>(initialPets);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
   const handlePetPress = (id: number) => {
@@ -22,7 +23,12 @@ export default function Index() {
   };
 
   const handleAddPet = (newPet: Pet) => {
-    setPets([newPet, ...pets]);
+    setPets((prevPets) => [newPet, ...prevPets]);
+  };
+
+  const getPetsData = async () => {
+    const response = await getPets();
+    setPets(response);
   };
 
   return (
@@ -32,6 +38,12 @@ export default function Index() {
         style={styles.headerButton}
       >
         <Text style={styles.headerButtonText}>Add Pet</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => getPetsData()}
+        style={styles.headerButton}
+      >
+        <Text style={styles.headerButtonText}>Get Pets</Text>
       </TouchableOpacity>
 
       <SafeAreaView style={styles.container} edges={["bottom"]}>
