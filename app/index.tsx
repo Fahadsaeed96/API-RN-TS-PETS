@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,7 +32,23 @@ export default function Index() {
     const response = await getPets();
     setPets(response);
   };
-
+  const { data, isPending, isLoading, error } = useQuery({
+    queryKey: ["allPets"],
+    queryFn: getPets,
+  });
+  if (isPending || isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200EE" />
+      </View>
+    );
+  }
+  if (error) {
+    return <Text>Error: {error.message}</Text>;
+  }
+  if (data?.length === 0) {
+    return <Text>No pets found</Text>;
+  }
   return (
     <>
       <TouchableOpacity
@@ -48,13 +66,13 @@ export default function Index() {
 
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {pets.length === 0 ? (
+          {data?.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No pets yet!</Text>
               <Text style={styles.emptySubtext}>Start by adding a new pet</Text>
             </View>
           ) : (
-            pets.map((pet) => (
+            data?.map((pet: Pet) => (
               <PetCard
                 key={pet.id}
                 pet={pet}
@@ -111,5 +129,10 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     marginTop: -2,
     textAlign: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

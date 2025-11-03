@@ -1,5 +1,6 @@
-import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
 import {
   Image,
   ScrollView,
@@ -9,23 +10,29 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getPetById } from "../API/Pets";
+import { deletePet, getPetById } from "../API/Pets";
 
 export default function PetDetails() {
   const { id } = useLocalSearchParams();
-  const [pet, setPet] = useState<Pet | null>(null);
-  const handleGetPetById = async () => {
-    const petDate = await getPetById(id as string);
-    setPet(petDate);
+  const router = useRouter();
+  const { data } = useQuery({
+    queryKey: ["petById", id],
+    queryFn: () => getPetById(id as string),
+  });
+
+  const handleDeletePet = async () => {
+    try {
+      await deletePet(id as string);
+      router.back();
+    } catch (error) {
+      console.error("Error deleting pet:", error);
+    }
   };
 
-  if (!pet) {
+  if (!data) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.errorContainer}>
-          <TouchableOpacity onPress={handleGetPetById}>
-            <Text style={styles.errorText}>Get Pet By Id</Text>
-          </TouchableOpacity>
           <Text style={styles.errorText}>Pet not found!</Text>
         </View>
       </SafeAreaView>
@@ -35,20 +42,20 @@ export default function PetDetails() {
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Image source={{ uri: pet.image }} style={styles.petImage} />
+        <Image source={{ uri: data?.image }} style={styles.petImage} />
 
         <View style={styles.header}>
-          <Text style={styles.name}>{pet.name}</Text>
+          <Text style={styles.name}>{data?.name}</Text>
           <View
             style={[
               styles.statusBadge,
-              pet.adopted === "Yes"
+              data?.adopted === "Yes"
                 ? styles.adoptedBadge
                 : styles.availableBadge,
             ]}
           >
             <Text style={styles.statusText}>
-              {pet.adopted === "Yes" ? "✓ Adopted" : "Available"}
+              {data?.adopted === "Yes" ? "✓ Adopted" : "Available"}
             </Text>
           </View>
         </View>
@@ -57,19 +64,22 @@ export default function PetDetails() {
           <Text style={styles.sectionTitle}>Details</Text>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>ID:</Text>
-            <Text style={styles.detailValue}>#{pet.id}</Text>
+            <Text style={styles.detailValue}>#{data?.id}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Type:</Text>
-            <Text style={styles.detailValue}>{pet.type}</Text>
+            <Text style={styles.detailValue}>{data?.type}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Status:</Text>
             <Text style={styles.detailValue}>
-              {pet.adopted === "Yes" ? "Adopted" : "Available for adoption"}
+              {data?.adopted === "Yes" ? "Adopted" : "Available for adoption"}
             </Text>
           </View>
         </View>
+        <TouchableOpacity onPress={handleDeletePet} style={styles.deleteButton}>
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,5 +169,19 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     color: "#666",
+  },
+  deleteButton: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: "#f44336",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
