@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -10,13 +10,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getPets } from "../API/Pets";
+import { deletePet, getPets } from "../API/Pets";
 import { AddPetModal } from "../components/AddPetModal";
 import { PetCard } from "../components/PetCard";
 import { Pet } from "../data/pets";
 
 export default function Index() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [pets, setPets] = useState<Pet[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -32,6 +33,19 @@ export default function Index() {
     const response = await getPets();
     setPets(response);
   };
+
+  const { mutate: deletePetMutation } = useMutation({
+    mutationKey: ["deletePet"],
+    mutationFn: async (id: string) => await deletePet(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allPets"] });
+    },
+  });
+
+  const handleDeletePet = (id: number) => {
+    deletePetMutation(id.toString());
+  };
+
   const { data, isPending, isLoading, error } = useQuery({
     queryKey: ["allPets"],
     queryFn: getPets,
@@ -77,6 +91,7 @@ export default function Index() {
                 key={pet.id}
                 pet={pet}
                 onPress={() => handlePetPress(pet.id)}
+                onDelete={() => handleDeletePet(pet.id)}
               />
             ))
           )}

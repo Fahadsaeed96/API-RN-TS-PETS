@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
@@ -14,16 +14,24 @@ import { deletePet, getPetById } from "../API/Pets";
 
 export default function PetDetails() {
   const { id } = useLocalSearchParams();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { data } = useQuery({
     queryKey: ["petById", id],
     queryFn: () => getPetById(id as string),
   });
-
+  const { mutate: deletePetMutation } = useMutation({
+    mutationKey: ["deletePet"],
+    mutationFn: async (id: string) => await deletePet(id),
+    onSuccess: () => {
+      alert("Pet deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["allPets"] });
+      router.back();
+    },
+  });
   const handleDeletePet = async () => {
     try {
-      await deletePet(id as string);
-      router.back();
+      deletePetMutation(id as string);
     } catch (error) {
       console.error("Error deleting pet:", error);
     }

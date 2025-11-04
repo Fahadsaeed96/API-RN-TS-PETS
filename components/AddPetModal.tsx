@@ -1,4 +1,5 @@
 import { createPet } from "@/API/Pets";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -23,30 +24,31 @@ export const AddPetModal: React.FC<AddPetModalProps> = ({
   onClose,
   onAdd,
 }) => {
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [adopted, setAdopted] = useState("");
   const [image, setImage] = useState("");
 
-  const handleAdd = async () => {
-    if (name.trim() && type.trim()) {
-      const maxId = Date.now();
-      const newPet = await createPet(name, type, image, adopted);
-      onAdd({
-        id: maxId,
-        name: name.trim(),
-        type: type.trim(),
-        adopted: adopted.trim() || "No",
-        image:
-          image.trim() ||
-          "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop",
-      });
-      // Reset form
+  const { mutate: createPetMutation } = useMutation({
+    mutationKey: ["createPet"],
+    mutationFn: async (newPet: Pet) =>
+      await createPet(newPet.name, newPet.type, newPet.image, newPet.adopted),
+    onSuccess: () => {
+      alert("Pet added successfully");
+      queryClient.invalidateQueries({ queryKey: ["allPets"] });
       setName("");
       setType("");
       setAdopted("");
       setImage("");
       onClose();
+    },
+  });
+
+  const handleAdd = async () => {
+    if (name.trim() && type.trim()) {
+      const maxId = Date.now();
+      createPetMutation({ id: maxId, name, type, image, adopted });
     }
   };
 

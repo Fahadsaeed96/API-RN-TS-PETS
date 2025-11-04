@@ -16,13 +16,17 @@ export const createPet = async (
   image: string,
   adopted: string
 ) => {
-  const response = await api.post("pets", {
-    name,
-    type,
-    image,
-    adopted,
-  });
-  return response.data;
+  try {
+    const response = await api.post("pets", {
+      name,
+      type,
+      image,
+      adopted,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating pet:", error);
+  }
 };
 export const deletePet = async (id: string) => {
   const response = await api.delete(`pets/${id}`);
